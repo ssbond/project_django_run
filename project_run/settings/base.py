@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'rest_framework',
 
     'app_run',
+
+    'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -118,3 +120,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 COMPANY_NAME = "Run, Forest!"
 SLOGAN = "Shit happens..."
 CONTACTS = "Кудыкина гора, улица последняя, дом с трубой, позвать зайца Евлампия"
+

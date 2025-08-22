@@ -8,7 +8,9 @@ from rest_framework.views import APIView
 from app_run.models import Run
 from app_run.serializers import RunSerializer, UserSerializer
 from django.contrib.auth.models import User
-
+from django_filters.rest_framework import DjangoFilterBackend, FilterSet
+from rest_framework.filters import OrderingFilter
+from rest_framework.pagination import PageNumberPagination
 
 @api_view(['GET'])
 def company_details(request):
@@ -18,15 +20,19 @@ def company_details(request):
         'contacts': settings.CONTACTS,
     }
     return Response(details)
+class RunsPagination(PageNumberPagination):
+    page_size = 5  # Количество объектов на странице по умолчанию (не обязательный параметр)
+    page_size_query_param = 'size'  # Разрешаем изменять количество объектов через query параметр size в url
+    max_page_size = 50  # Ограничиваем максимальное количество объектов на странице
 
 class RunViewSet(viewsets.ModelViewSet):
     queryset = Run.objects.all().select_related('athlete')
     serializer_class = RunSerializer
-
-
-
-
-
+    filter_backends = (OrderingFilter, DjangoFilterBackend)
+    filterset_fields = ['status', 'athlete']
+    ordering_fields = ['created_at']
+    ordering = ('-created_at',)
+    pagination_class = RunsPagination
 
 class RunStartApiView(APIView):
     def post(self, request, *args, **kwargs):
@@ -63,12 +69,20 @@ class RunStopApiView(APIView):
             data = {"message": "Забег не найден"}
             return Response(data, status=status.HTTP_404_NOT_FOUND)
 
+class AthletsPagination(PageNumberPagination):
+    page_size = 5  # Количество объектов на странице по умолчанию (не обязательный параметр)
+    page_size_query_param = 'size'  # Разрешаем изменять количество объектов через query параметр size в url
+    max_page_size = 50  # Ограничиваем максимальное количество объектов на странице
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.filter(is_superuser=False)
     serializer_class = UserSerializer
-    filter_backends = [SearchFilter]  # Подключаем SearchFilter здесь
-    search_fields = ['first_name', 'last_name']  # Указываем поля по которым будет вестись поиск
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['first_name', 'last_name']  # Указываем поля по которым будет вестись поиск
+    search_fields = ['first_name', 'last_name']  # Для поиска по части строки
+    ordering_fields = ['date_joined'] # Поля по которым будет возможна сортировка
+    ordering = ['-date_joined']  # Сортировка по умолчанию (новые first)
+    pagination_class = AthletsPagination
     def get_queryset(self):
         qs = super().get_queryset()
         user_role = self.request.query_params.get('type')
