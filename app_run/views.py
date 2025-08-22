@@ -1,3 +1,4 @@
+from django.db.models import Count, Q
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view
 from rest_framework.filters import SearchFilter
@@ -8,7 +9,7 @@ from rest_framework.views import APIView
 from app_run.models import Run
 from app_run.serializers import RunSerializer, UserSerializer
 from django.contrib.auth.models import User
-from django_filters.rest_framework import DjangoFilterBackend, FilterSet
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
 from rest_framework.pagination import PageNumberPagination
 
@@ -73,7 +74,10 @@ class AthletsPagination(PageNumberPagination):
     max_page_size = 50  # Ограничиваем максимальное количество объектов на странице
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = User.objects.filter(is_superuser=False)
+    queryset = User.objects.filter(is_superuser=False).annotate(
+        runs_finished_count=Count('runs', filter=Q(runs__status='finished'))
+    )
+
     serializer_class = UserSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['first_name', 'last_name']  # Указываем поля по которым будет вестись поиск
