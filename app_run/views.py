@@ -21,7 +21,6 @@ def company_details(request):
     }
     return Response(details)
 class RunsPagination(PageNumberPagination):
-    page_size = 5  # Количество объектов на странице по умолчанию (не обязательный параметр)
     page_size_query_param = 'size'  # Разрешаем изменять количество объектов через query параметр size в url
     max_page_size = 50  # Ограничиваем максимальное количество объектов на странице
 
@@ -70,7 +69,6 @@ class RunStopApiView(APIView):
             return Response(data, status=status.HTTP_404_NOT_FOUND)
 
 class AthletsPagination(PageNumberPagination):
-    page_size = 5  # Количество объектов на странице по умолчанию (не обязательный параметр)
     page_size_query_param = 'size'  # Разрешаем изменять количество объектов через query параметр size в url
     max_page_size = 50  # Ограничиваем максимальное количество объектов на странице
 
