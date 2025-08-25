@@ -1,13 +1,18 @@
+from pyexpat.errors import messages
+
 from django.db.models import Count, Q
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view
+from django.core.exceptions import ValidationError
 from rest_framework.filters import SearchFilter
 from rest_framework.response import Response
 from django.conf import settings
+from rest_framework.status import HTTP_200_OK
 from rest_framework.views import APIView
+from django.db import IntegrityError
 
-from app_run.models import Run
-from app_run.serializers import RunSerializer, UserSerializer
+from app_run.models import Run,AthleteInfo
+from app_run.serializers import RunSerializer, UserSerializer, AthleteInfoSerializer
 from django.contrib.auth.models import User
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
@@ -93,3 +98,36 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         elif user_role == 'coach':
             qs = qs.filter(is_staff=True)
         return qs
+
+class AthleteInfoApiView(APIView):
+    def get(self, request, *args, **kwargs):
+        athlete_id = self.kwargs.get('athlete_id')
+        try:
+            user = User.objects.get(pk=athlete_id)
+        except User.DoesNotExist:
+            return Response('User not found', status=status.HTTP_404_NOT_FOUND)
+        athlete_info, created = AthleteInfo.objects.get_or_create(pk=athlete_id)
+        athlete_info_serializer = AthleteInfoSerializer(athlete_info)
+        return Response(athlete_info_serializer.data)
+
+    def put(self, request, *args, **kwargs):
+        athlete_id = self.kwargs.get('athlete_id')
+        try:
+            athlete_info, created = AthleteInfo.objects.get_or_create(pk=athlete_id)
+        except AthleteInfo.DoesNotExist:
+            return Response('User not found', status=status.HTTP_404_NOT_FOUND)
+
+        weight = request.data.get('weight')
+        goals = request.data.get('goals')
+        athlete_info.weight = weight
+        athlete_info.goals = goals
+        try:
+            athlete_info.full_clean()
+            athlete_info.save()
+        except ValidationError as e:
+            erros = e.message_dict if hasattr(e, 'message_dict') else {'detail': e.messages}
+            return Response(erros, status=status.HTTP_400_BAD_REQUEST)
+        except IntegrityError as e:
+            return Response({'weight': ['Недопустимое значение веса']}, status=status.HTTP_400_BAD_REQUEST)
+        athlete_info_serializer = AthleteInfoSerializer(athlete_info)
+        return Response(athlete_info_serializer.data, status=status.HTTP_201_CREATED)
