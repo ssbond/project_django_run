@@ -103,7 +103,7 @@ class AthleteInfoApiView(APIView):
     def get(self, request, *args, **kwargs):
         athlete_id = self.kwargs.get('athlete_id')
         try:
-            user = User.objects.get(pk=athlete_id)
+            User.objects.get(pk=athlete_id)
         except User.DoesNotExist:
             return Response('User not found', status=status.HTTP_404_NOT_FOUND)
         athlete_info, created = AthleteInfo.objects.get_or_create(pk=athlete_id)
@@ -113,10 +113,10 @@ class AthleteInfoApiView(APIView):
     def put(self, request, *args, **kwargs):
         athlete_id = self.kwargs.get('athlete_id')
         try:
-            athlete_info, created = AthleteInfo.objects.get_or_create(pk=athlete_id)
-        except AthleteInfo.DoesNotExist:
-            return Response('User not found', status=status.HTTP_404_NOT_FOUND)
-
+            User.objects.get(pk=athlete_id)
+        except User.DoesNotExist:
+            return Response('User not found', status=status.HTTP_400_BAD_REQUEST)
+        athlete_info, created = AthleteInfo.objects.get_or_create(pk=athlete_id)
         weight = request.data.get('weight')
         goals = request.data.get('goals')
         athlete_info.weight = weight
