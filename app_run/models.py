@@ -1,4 +1,4 @@
-from django.core.validators import MaxValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import TextField, PositiveSmallIntegerField
 from django.contrib.auth.models import User
@@ -30,7 +30,7 @@ class AthleteInfo(models.Model):
     )
     weight = PositiveSmallIntegerField(
         verbose_name='Вес',
-        validators=[MaxValueValidator(900)],
+        validators=[MaxValueValidator(899), MinValueValidator(1)],
         default=None,
         null=True,
     )
