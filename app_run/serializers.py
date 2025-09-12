@@ -1,8 +1,10 @@
 from itertools import count
 
 from rest_framework import serializers
-from .models import Run, AthleteInfo
+from .models import Run, AthleteInfo, Challenge
+
 from django.contrib.auth.models import User
+
 
 class UserSerializer(serializers.ModelSerializer):
     type = serializers.SerializerMethodField()
@@ -33,3 +35,7 @@ class AthleteInfoSerializer(serializers.ModelSerializer):
         model = AthleteInfo
         fields = '__all__'
 
+class ChallengeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Challenge
+        fields = '__all__'

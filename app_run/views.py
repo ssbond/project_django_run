@@ -11,8 +11,8 @@ from rest_framework.status import HTTP_200_OK
 from rest_framework.views import APIView
 from django.db import IntegrityError
 
-from app_run.models import Run,AthleteInfo
-from app_run.serializers import RunSerializer, UserSerializer, AthleteInfoSerializer
+from app_run.models import Run, AthleteInfo, Challenge
+from app_run.serializers import RunSerializer, UserSerializer, AthleteInfoSerializer, ChallengeSerializer
 from django.contrib.auth.models import User
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
@@ -39,6 +39,8 @@ class RunViewSet(viewsets.ModelViewSet):
     ordering = ('-created_at',)
     pagination_class = RunsPagination
 
+
+
 class RunStartApiView(APIView):
     def post(self, request, *args, **kwargs):
         run_id = self.kwargs.get('run_id')
@@ -60,12 +62,25 @@ class RunStartApiView(APIView):
 class RunStopApiView(APIView):
     def post(self, request, *args, **kwargs):
         run_id = self.kwargs.get('run_id')
+
         try:
             run = Run.objects.get(id=run_id)
             if run.status == 'in_progress':
+            # if run.status == 'finished':
                 run.status = 'finished'
                 run.save()
                 data = {"message": "Забег окончил"}
+                # print('Забег окончен')
+                athlete = self.request.user  # текущий пользователь
+                try:
+                    total_runs = Run.objects.filter(athlete=athlete, status='finished').count()
+                except Run.DoesNotExist:
+                    total_runs = 0
+                if total_runs >= 10:
+                    challenge10, created = Challenge.objects.get_or_create(
+                        athlete=athlete,
+                        full_name='Сделай 10 Забегов!'
+                    )
                 return Response(data, status=status.HTTP_200_OK)
             else:
                 data = {"message": "Невозможно закончить не начатый забег"}
@@ -131,3 +146,18 @@ class AthleteInfoApiView(APIView):
             return Response({'weight': ['Недопустимое значение веса']}, status=status.HTTP_400_BAD_REQUEST)
         athlete_info_serializer = AthleteInfoSerializer(athlete_info)
         return Response(athlete_info_serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ChallengeInfoApiViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Challenge.objects.all().select_related('athlete')
+    serializer_class = ChallengeSerializer
+    filter_backends = (OrderingFilter, DjangoFilterBackend)
+    filterset_fields = ['athlete']
+    ordering_fields = ['full_name']
+    ordering = ('full_name',)
+    pagination_class = RunsPagination
+    def list(self, request, *args, **kwargs):
+        user = self.request.user  # текущий пользователь
+        # ... ваш код ...
+        print(user)
+        return super().list(request, *args, **kwargs)

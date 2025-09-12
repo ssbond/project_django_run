@@ -35,3 +35,14 @@ class AthleteInfo(models.Model):
         null=True,
     )
     user_id = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+
+class Challenge(models.Model):
+    full_name = models.CharField(max_length=100, verbose_name="Название челленджа")
+    athlete = models.ForeignKey(User, on_delete=models.CASCADE, related_name='challenges')
+    # date = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        verbose_name = 'Челлендж'
+        verbose_name_plural = 'Челленджи'
+
+    def __str__(self):
+        return self.full_name

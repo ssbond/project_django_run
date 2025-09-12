@@ -18,11 +18,13 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework import routers
 
-from app_run.views import company_details, RunViewSet, UserViewSet, RunStartApiView, RunStopApiView, AthleteInfoApiView
+from app_run.views import company_details, RunViewSet, UserViewSet, RunStartApiView, RunStopApiView, AthleteInfoApiView, \
+    ChallengeInfoApiViewSet
 
 router = routers.DefaultRouter()
 router.register('api/runs', RunViewSet)
 router.register('api/users', UserViewSet)
+router.register('api/challenges', ChallengeInfoApiViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
