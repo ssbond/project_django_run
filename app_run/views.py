@@ -71,11 +71,13 @@ class RunStopApiView(APIView):
                 run.save()
                 data = {"message": "Забег окончил"}
                 # print('Забег окончен')
-                athlete = self.request.user  # текущий пользователь
-                if athlete == None or athlete.is_anonymous:
-                    data = {"message": "Анонимный пользователь не может участвовать в челленджах"}
-                    return Response(data, status=status.HTTP_401_UNAUTHORIZED)
+                # Проверяем и создаем челлендж "Сделай 10 Забегов!" используя авторизованного пльзователя
+                # athlete = self.request.user  # текущий пользователь
+                # if athlete == None or athlete.is_anonymous:
+                #     data = {"message": "Анонимный пользователь не может участвовать в челленджах"}
+                #     return Response(data, status=status.HTTP_401_UNAUTHORIZED)
                 try:
+                    athlete = Run.objects.get(id=run_id).athlete
                     total_runs = Run.objects.filter(athlete=athlete, status='finished').count()
                 except Run.DoesNotExist:
                     total_runs = 0
