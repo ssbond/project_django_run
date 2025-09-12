@@ -22,26 +22,32 @@ from rest_framework.pagination import PageNumberPagination
 class PositionApiViewSet(viewsets.ModelViewSet):
     queryset = Position.objects.all()
     serializer_class = PositionSerializer
-    def post(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):
         serializer = PositionSerializer(data=request.data)
         if serializer.is_valid():
+            current_run = serializer.validated_data['run']
+            current_run_id = current_run.id
+            run = Run.objects.get(id=current_run_id)
+            run_status = run.status
+            if run_status != 'in_progress':
+                return Response({'detail': 'Невозможно добавить позицию в забег, который не в процессе.'}, status=status.HTTP_400_BAD_REQUEST)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, *args, **kwargs):
-        run_id = request.data.pop('id', None)
-        run = Run.objects.get(id=run_id)
-        run.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-    def get(self, request, *args, **kwargs):
-        run_id = request.query_params.get('run_id', None)
-        if run_id is not None:
-            positions = Position.objects.filter(run=run_id)
-        else:
-            positions = Position.objects.all()
-        serializer = PositionSerializer(positions, many=True)
-        return Response(serializer.data, status=HTTP_200_OK)
+    # def destroy(self, request, *args, **kwargs):
+    #     run_id = request.data.pop('id', None)
+    #     run = Run.objects.get(id=run_id)
+    #     run.delete()
+    #     return Response(status=status.HTTP_204_NO_CONTENT)
+    # def list(self, request, *args, **kwargs):
+    #     run_id = request.query_params.get('run_id', None)
+    #     if run_id is not None:
+    #         positions = Position.objects.filter(run=run_id)
+    #     else:
+    #         positions = Position.objects.all()
+    #     serializer = PositionSerializer(positions, many=True)
+    #     return Response(serializer.data, status=HTTP_200_OK)
 
 
 @api_view(['GET'])

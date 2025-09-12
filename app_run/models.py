@@ -53,16 +53,16 @@ class Position(models.Model):
         max_digits=9,  # Всего цифр (включая после запятой)
         decimal_places=4,  # Именно 4 знака после запятой
         validators=[
-            MinValueValidator(-90.0),
-            MaxValueValidator(90.0)
+            MinValueValidator(-90),
+            MaxValueValidator(90)
         ]
     )
     longitude = models.DecimalField(
         max_digits=9,  # Всего цифр (включая после запятой)
         decimal_places=4,  # Именно 4 знака после запятой
         validators=[
-            MinValueValidator(-180.0),
-            MaxValueValidator(180.0)
+            MinValueValidator(-180),
+            MaxValueValidator(180)
         ]
     )
 
