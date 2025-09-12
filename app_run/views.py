@@ -11,12 +11,38 @@ from rest_framework.status import HTTP_200_OK
 from rest_framework.views import APIView
 from django.db import IntegrityError
 
-from app_run.models import Run, AthleteInfo, Challenge
-from app_run.serializers import RunSerializer, UserSerializer, AthleteInfoSerializer, ChallengeSerializer
+from app_run.models import Run, AthleteInfo, Challenge, Position
+from app_run.serializers import RunSerializer, UserSerializer, AthleteInfoSerializer, ChallengeSerializer, PositionSerializer
 from django.contrib.auth.models import User
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
 from rest_framework.pagination import PageNumberPagination
+
+
+class PositionApiViewSet(viewsets.ModelViewSet):
+    queryset = Position.objects.all()
+    serializer_class = PositionSerializer
+    def post(self, request, *args, **kwargs):
+        serializer = PositionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, *args, **kwargs):
+        run_id = request.data.pop('id', None)
+        run = Run.objects.get(id=run_id)
+        run.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    def get(self, request, *args, **kwargs):
+        run_id = request.query_params.get('run_id', None)
+        if run_id is not None:
+            positions = Position.objects.filter(run=run_id)
+        else:
+            positions = Position.objects.all()
+        serializer = PositionSerializer(positions, many=True)
+        return Response(serializer.data, status=HTTP_200_OK)
+
 
 @api_view(['GET'])
 def company_details(request):
@@ -164,5 +190,6 @@ class ChallengeInfoApiViewSet(viewsets.ReadOnlyModelViewSet):
     def list(self, request, *args, **kwargs):
         user = self.request.user  # текущий пользователь
         # ... ваш код ...
-        print(user)
+        # print(user)
         return super().list(request, *args, **kwargs)
+
