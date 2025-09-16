@@ -18,7 +18,7 @@ class Run(models.Model):
         choices= STATUS_CHOICES,
         default='init'
     )
-
+    distance = models.FloatField(null=True,blank=True, default=None)
 
 
 class AthleteInfo(models.Model):

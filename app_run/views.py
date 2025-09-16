@@ -17,6 +17,9 @@ from django.contrib.auth.models import User
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
 from rest_framework.pagination import PageNumberPagination
+from geopy.distance import geodesic
+
+
 
 
 class PositionApiViewSet(viewsets.ModelViewSet):
@@ -90,6 +93,22 @@ class RunStartApiView(APIView):
             data = {"message": "Забег не найден"}
             return Response(data, status=status.HTTP_404_NOT_FOUND)
 
+def calculate_distance(coordinates_list):
+    distance = 0.0
+    for i in range(len(coordinates_list)-1):
+        segment = geodesic(coordinates_list[i], coordinates_list[i+1]).km
+        distance += segment
+    return distance
+
+# тестовая функция для проверки расчета дистанции
+def mock_data():
+    print('test')
+    coordinates_list = Position.objects.filter(run_id=2).values_list('latitude', 'longitude')
+    distance = calculate_distance(coordinates_list)
+    print(coordinates_list)
+    distance = calculate_distance(coordinates_list)
+    print(distance)
+
 
 class RunStopApiView(APIView):
     def post(self, request, *args, **kwargs):
@@ -100,14 +119,11 @@ class RunStopApiView(APIView):
             if run.status == 'in_progress':
             # if run.status == 'finished':
                 run.status = 'finished'
+                coordinates_list = Position.objects.filter(run_id=2).values_list('latitude', 'longitude')
+                distance = calculate_distance(coordinates_list)
+                run.distance = distance
                 run.save()
                 data = {"message": "Забег окончил"}
-                # print('Забег окончен')
-                # Проверяем и создаем челлендж "Сделай 10 Забегов!" используя авторизованного пльзователя
-                # athlete = self.request.user  # текущий пользователь
-                # if athlete == None or athlete.is_anonymous:
-                #     data = {"message": "Анонимный пользователь не может участвовать в челленджах"}
-                #     return Response(data, status=status.HTTP_401_UNAUTHORIZED)
                 try:
                     athlete = Run.objects.get(id=run_id).athlete
                     total_runs = Run.objects.filter(athlete=athlete, status='finished').count()
@@ -153,6 +169,9 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
 class AthleteInfoApiView(APIView):
     def get(self, request, *args, **kwargs):
+
+        mock_data() #тестовый вызов
+
         athlete_id = self.kwargs.get('athlete_id')
         try:
             user = User.objects.get(id=athlete_id)
