@@ -119,7 +119,7 @@ class RunStopApiView(APIView):
             if run.status == 'in_progress':
             # if run.status == 'finished':
                 run.status = 'finished'
-                coordinates_list = Position.objects.filter(run_id=2).values_list('latitude', 'longitude')
+                coordinates_list = Position.objects.filter(run_id=run_id).values_list('latitude', 'longitude')
                 distance = calculate_distance(coordinates_list)
                 run.distance = distance
                 run.save()
