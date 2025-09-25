@@ -109,6 +109,27 @@ def mock_data():
     distance = calculate_distance(coordinates_list)
     print(distance)
 
+def challenge10runs(athlete):
+    total_runs = Run.objects.filter(athlete=athlete, status='finished').count()
+    if total_runs >= 10:
+        challenge10, created = Challenge.objects.get_or_create(
+            athlete=athlete,
+            full_name='Сделай 10 Забегов!'
+        )
+        return challenge10
+    return None
+
+
+def challenge50km(athlete):
+    total_distance = Run.objects.filter(athlete=athlete, status='finished').aggregate(total_distance=Count('distance'))['total_distance'] or 0
+    if total_distance >= 50:
+        challenge50, created = Challenge.objects.get_or_create(
+            athlete=athlete,
+            full_name='Пробеги 50 км!'
+        )
+        return challenge50
+    return None
+
 
 class RunStopApiView(APIView):
     def post(self, request, *args, **kwargs):
@@ -124,16 +145,22 @@ class RunStopApiView(APIView):
                 run.distance = distance
                 run.save()
                 data = {"message": "Забег окончил"}
-                try:
-                    athlete = Run.objects.get(id=run_id).athlete
-                    total_runs = Run.objects.filter(athlete=athlete, status='finished').count()
-                except Run.DoesNotExist:
-                    total_runs = 0
-                if total_runs >= 10:
-                    challenge10, created = Challenge.objects.get_or_create(
-                        athlete=athlete,
-                        full_name='Сделай 10 Забегов!'
-                    )
+                # Проверка и создание челленджа "Сделай 10 Забегов!"
+                athlete = Run.objects.get(id=run_id).athlete
+                challenge10runs(athlete)
+                challenge50km(athlete)
+
+
+            # try:
+            #         athlete = Run.objects.get(id=run_id).athlete
+            #         total_runs = Run.objects.filter(athlete=athlete, status='finished').count()
+            #     except Run.DoesNotExist:
+            #         total_runs = 0
+            #     if total_runs >= 10:
+            #         challenge10, created = Challenge.objects.get_or_create(
+            #             athlete=athlete,
+            #             full_name='Сделай 10 Забегов!'
+            #         )
                 return Response(data, status=status.HTTP_200_OK)
             else:
                 data = {"message": "Невозможно закончить не начатый забег"}
