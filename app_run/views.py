@@ -1,6 +1,7 @@
 from pyexpat.errors import messages
 
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum
+
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view
 from django.core.exceptions import ValidationError
@@ -121,7 +122,7 @@ def challenge10runs(athlete):
 
 
 def challenge50km(athlete):
-    total_distance = Run.objects.filter(athlete=athlete, status='finished').aggregate(total_distance=Count('distance'))['total_distance'] or 0
+    total_distance = Run.objects.filter(athlete=athlete, status='finished').aggregate(total_distance=Sum('distance'))['total_distance'] or 0
     if total_distance >= 50:
         challenge50, created = Challenge.objects.get_or_create(
             athlete=athlete,
@@ -238,10 +239,10 @@ class ChallengeInfoApiViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_fields = ['athlete']
     ordering_fields = ['full_name']
     ordering = ('full_name',)
-    pagination_class = RunsPagination
-    def list(self, request, *args, **kwargs):
-        user = self.request.user  # текущий пользователь
+    # pagination_class = RunsPagination
+    # def list(self, request, *args, **kwargs):
+    #     user = self.request.user  # текущий пользователь
         # ... ваш код ...
         # print(user)
-        return super().list(request, *args, **kwargs)
+        # return super().list(request, *args, **kwargs)
 
