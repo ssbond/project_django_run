@@ -49,7 +49,4 @@ def upload_collectible_items_xls(request):
                 # error_details.append(f"Строка {i}, Столбец {field_index} ('{field_name}'): {', '.join(error_list)}")
                 error_details.append(f"row_{i}[{field_index}]")
             message.append(error_details)
-    if message:  # Если в списке message есть ошибки (он не пустой)
-        return Response(message, status=400)  # Возвращаем ошибку
-    else:
-        return Response({"message": "Файл успешно загружен."}, status=200)  # Возвращаем успех
+    return Response(message, status=200)
