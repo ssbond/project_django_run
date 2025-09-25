@@ -125,7 +125,7 @@ def challenge50km(athlete):
     if total_distance >= 50:
         challenge50, created = Challenge.objects.get_or_create(
             athlete=athlete,
-            full_name='Пробеги 50 км!'
+            full_name='Пробеги 50 километров!'
         )
         return challenge50
     return None
