@@ -1,7 +1,7 @@
 from itertools import count
 
 from rest_framework import serializers
-from .models import Run, AthleteInfo, Challenge, Position
+from .models import Run, AthleteInfo, Challenge, Position, CollectibleItem
 
 from django.contrib.auth.models import User
 
@@ -44,3 +44,8 @@ class PositionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Position
         fields = ['id', 'run' ,'latitude', 'longitude']
+
+class CollectibleItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CollectibleItem
+        fields = '__all__'

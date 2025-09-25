@@ -19,7 +19,9 @@ class Run(models.Model):
         default='init'
     )
     distance = models.FloatField(null=True,blank=True, default=None)
-
+    class Meta:
+        verbose_name = 'Забег'
+        verbose_name_plural = 'Забеги'
 
 class AthleteInfo(models.Model):
     goals = TextField(
@@ -35,6 +37,10 @@ class AthleteInfo(models.Model):
         null=True,
     )
     user_id = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+
+    class Meta:
+        verbose_name = 'Информация об атлете'
+        verbose_name_plural = 'Информация об атлетах'
 
 class Challenge(models.Model):
     full_name = models.CharField(max_length=100, verbose_name="Название челленджа")
@@ -70,3 +76,29 @@ class Position(models.Model):
     class Meta:
         verbose_name = 'Местоположение'
         verbose_name_plural = 'Местоположения'
+
+class CollectibleItem(models.Model):
+    name = models.CharField(max_length=100, verbose_name="Название артефакта")
+    uid = models.CharField(max_length=100, verbose_name="Уникальный идентификатор", unique=True)
+    latitude = models.DecimalField(
+        max_digits=9,  # Всего цифр (включая после запятой)
+        decimal_places=4,  # Именно 4 знака после запятой
+        validators=[
+            MinValueValidator(-90),
+            MaxValueValidator(90)
+        ]
+    )
+    longitude = models.DecimalField(
+        max_digits=9,  # Всего цифр (включая после запятой)
+        decimal_places=4,  # Именно 4 знака после запятой
+        validators=[
+            MinValueValidator(-180),
+            MaxValueValidator(180)
+        ]
+    )
+    picture = models.URLField(verbose_name="Ссылка на изображение")
+    value = models.IntegerField(verbose_name="Крутизна артефакта")
+
+    class Meta:
+        verbose_name = 'Коллекционный артефакт'
+        verbose_name_plural = 'Коллекционные артефакты'

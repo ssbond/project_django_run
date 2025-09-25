@@ -20,15 +20,19 @@ from rest_framework import routers
 
 from app_run.views import company_details, RunViewSet, UserViewSet, RunStartApiView, RunStopApiView, AthleteInfoApiView, \
     ChallengeInfoApiViewSet, PositionApiViewSet
+from app_run.view_collectible_item import CollectibleItemApiViewSet, upload_collectible_items_xls
 
 router = routers.DefaultRouter()
 router.register('api/runs', RunViewSet)
 router.register('api/users', UserViewSet)
 router.register('api/challenges', ChallengeInfoApiViewSet)
 router.register('api/positions', PositionApiViewSet)
+router.register('api/collectible_item', CollectibleItemApiViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # path('api/upload_file/', UploadFileApiView.as_view(), name='upload-file'),
+    path('api/upload_file/', upload_collectible_items_xls),
     path('api/company_details/', company_details),
     path('api/runs/<int:run_id>/start/', RunStartApiView.as_view(), name='run-start'),
     path('api/runs/<int:run_id>/stop/', RunStopApiView.as_view(), name='run-stop'),
