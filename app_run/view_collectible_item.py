@@ -32,7 +32,7 @@ def upload_collectible_items_xls(request):
     filedata = []
     for row in rows:
         filedata.append(dict(zip(header_data, row)))
-    message = []
+    invalid_rows = []  # Здесь будем хранить данные невалидных строк
     for i, row in enumerate(filedata, start=2):  # start=2, т.к. 1 строка - заголовок
         serializer = CollectibleItemSerializer(data=row)
         if serializer.is_valid():
@@ -47,6 +47,6 @@ def upload_collectible_items_xls(request):
                 except ValueError:
                     field_index = "N/A"
                 # error_details.append(f"Строка {i}, Столбец {field_index} ('{field_name}'): {', '.join(error_list)}")
-                error_details.append(f"row_{i}[{field_index}]")
-            message.append(error_details)
-    return Response(message, status=200)
+                original_row_data = [row[field_name] for field_name in header_data]
+            invalid_rows.append(original_row_data)  # Добавляем данные строки
+    return Response(invalid_rows, status=200)
