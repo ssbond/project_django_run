@@ -6,6 +6,12 @@ from .models import Run, AthleteInfo, Challenge, Position, CollectibleItem
 from django.contrib.auth.models import User
 
 
+
+class CollectibleItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CollectibleItem
+        fields = ['name','uid','longitude','latitude','value','picture']
+
 class UserSerializer(serializers.ModelSerializer):
     type = serializers.SerializerMethodField()
     runs_finished = serializers.IntegerField(source='runs_finished_count', read_only=True)
@@ -18,11 +24,21 @@ class UserSerializer(serializers.ModelSerializer):
         return 'coach' if obj.is_staff else 'athlete'
 
 
+class UserDetailSerializer(UserSerializer):
+    items = serializers.SerializerMethodField()
+    class Meta(UserSerializer.Meta):
+        model = User
+        fields = UserSerializer.Meta.fields + ['items']
+
+    def get_items(self, obj):
+        return CollectibleItemSerializer(obj.items.all(), many=True).data
+
 class AthletRunSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
         fields = ['id', 'username', 'last_name', 'first_name']
+
 
 class RunSerializer(serializers.ModelSerializer):
     athlete_data = AthletRunSerializer(source="athlete", read_only=True)
@@ -44,8 +60,3 @@ class PositionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Position
         fields = ['id', 'run' ,'latitude', 'longitude']
-
-class CollectibleItemSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CollectibleItem
-        fields = '__all__'

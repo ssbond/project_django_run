@@ -99,6 +99,9 @@ class CollectibleItem(models.Model):
     picture = models.URLField(verbose_name="Ссылка на изображение")
     value = models.IntegerField(verbose_name="Крутизна артефакта")
 
+    users = models.ManyToManyField(User, related_name='items')
+
+
     class Meta:
         verbose_name = 'Коллекционный артефакт'
         verbose_name_plural = 'Коллекционные артефакты'

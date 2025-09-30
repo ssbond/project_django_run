@@ -13,13 +13,34 @@ from rest_framework.views import APIView
 from django.db import IntegrityError
 
 from app_run.models import Run, AthleteInfo, Challenge, Position
-from app_run.serializers import RunSerializer, UserSerializer, AthleteInfoSerializer, ChallengeSerializer, PositionSerializer
+from app_run.serializers import RunSerializer, UserSerializer, \
+    AthleteInfoSerializer, ChallengeSerializer, PositionSerializer, \
+    UserDetailSerializer
 from django.contrib.auth.models import User
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
 from rest_framework.pagination import PageNumberPagination
 from geopy.distance import geodesic
+from app_run.models import CollectibleItem
 
+
+def check_collectible_item(position):
+    collectible_items = CollectibleItem.objects.all()
+    for item in collectible_items:
+        item_distance = geodesic((position.latitude, position.longitude), (item.latitude, item.longitude)).meters
+        if item_distance <= 100:
+            user = position.run.athlete
+            if item not in user.items.all():
+                user.items.add(item)
+                user.save()
+                # Здесь можно добавить уведомление пользователя о сборе артефакта
+                # print(f"User {user.username} collected item {item.name}!")
+                # Логика для уведомления пользователя может быть добавлена здесь
+                # Например, отправка email или push-уведомления
+            # else:
+            #     print(f"User {user.username} already has item {item.name}.")
+        # else:
+        #     print(f"Item {item.name} is too far from the position.")
 
 
 
@@ -35,7 +56,9 @@ class PositionApiViewSet(viewsets.ModelViewSet):
             run_status = run.status
             if run_status != 'in_progress':
                 return Response({'detail': 'Невозможно добавить позицию в забег, который не в процессе.'}, status=status.HTTP_400_BAD_REQUEST)
-            serializer.save()
+            position = serializer.save()
+            check_collectible_item(position)    # проверяем артефакты в радиусе 100м
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -94,44 +117,6 @@ class RunStartApiView(APIView):
             data = {"message": "Забег не найден"}
             return Response(data, status=status.HTTP_404_NOT_FOUND)
 
-def calculate_distance(coordinates_list):
-    distance = 0.0
-    for i in range(len(coordinates_list)-1):
-        segment = geodesic(coordinates_list[i], coordinates_list[i+1]).km
-        distance += segment
-    return distance
-
-# тестовая функция для проверки расчета дистанции
-def mock_data():
-    print('test')
-    coordinates_list = Position.objects.filter(run_id=2).values_list('latitude', 'longitude')
-    distance = calculate_distance(coordinates_list)
-    print(coordinates_list)
-    distance = calculate_distance(coordinates_list)
-    print(distance)
-
-def challenge10runs(athlete):
-    total_runs = Run.objects.filter(athlete=athlete, status='finished').count()
-    if total_runs >= 10:
-        challenge10, created = Challenge.objects.get_or_create(
-            athlete=athlete,
-            full_name='Сделай 10 Забегов!'
-        )
-        return challenge10
-    return None
-
-
-def challenge50km(athlete):
-    total_distance = Run.objects.filter(athlete=athlete, status='finished').aggregate(total_distance=Sum('distance'))['total_distance'] or 0
-    if total_distance >= 50:
-        challenge50, created = Challenge.objects.get_or_create(
-            athlete=athlete,
-            full_name='Пробеги 50 километров!'
-        )
-        return challenge50
-    return None
-
-
 class RunStopApiView(APIView):
     def post(self, request, *args, **kwargs):
         run_id = self.kwargs.get('run_id')
@@ -170,6 +155,47 @@ class RunStopApiView(APIView):
             data = {"message": "Забег не найден"}
             return Response(data, status=status.HTTP_404_NOT_FOUND)
 
+
+
+def calculate_distance(coordinates_list):
+    distance = 0.0
+    for i in range(len(coordinates_list)-1):
+        segment = geodesic(coordinates_list[i], coordinates_list[i+1]).km
+        distance += segment
+    return distance
+
+# тестовая функция для проверки расчета дистанции
+def mock_data():
+    print('test')
+    coordinates_list = Position.objects.filter(run_id=2).values_list('latitude', 'longitude')
+    distance = calculate_distance(coordinates_list)
+    print(coordinates_list)
+    distance = calculate_distance(coordinates_list)
+    print(distance)
+
+def challenge10runs(athlete):
+    total_runs = Run.objects.filter(athlete=athlete, status='finished').count()
+    if total_runs >= 10:
+        challenge10, created = Challenge.objects.get_or_create(
+            athlete=athlete,
+            full_name='Сделай 10 Забегов!'
+        )
+        return challenge10
+    return None
+
+
+def challenge50km(athlete):
+    total_distance = Run.objects.filter(athlete=athlete, status='finished').aggregate(total_distance=Sum('distance'))['total_distance'] or 0
+    if total_distance >= 50:
+        challenge50, created = Challenge.objects.get_or_create(
+            athlete=athlete,
+            full_name='Пробеги 50 километров!'
+        )
+        return challenge50
+    return None
+
+
+
 class AthletsPagination(PageNumberPagination):
     page_size_query_param = 'size'  # Разрешаем изменять количество объектов через query параметр size в url
     max_page_size = 50  # Ограничиваем максимальное количество объектов на странице
@@ -194,6 +220,16 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         elif user_role == 'coach':
             qs = qs.filter(is_staff=True)
         return qs
+
+class UserDetailApiView(APIView):
+    def get(self,request, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response('User not found', status=status.HTTP_404_NOT_FOUND)
+        user_serializer = UserDetailSerializer(user)
+        return Response(user_serializer.data)
+
 
 class AthleteInfoApiView(APIView):
     def get(self, request, *args, **kwargs):

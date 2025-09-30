@@ -38,15 +38,11 @@ def upload_collectible_items_xls(request):
         if serializer.is_valid():
             serializer.save()
         else:
-            errors = serializer.errors
-            error_details = []
-            for field_name, error_list in errors.items():
-                # Ищем индекс поля в header_data
-                try:
-                    field_index = header_data.index(field_name) + 1  # +1 для Excel-стиля (столбец A=1)
-                except ValueError:
-                    field_index = "N/A"
-                # error_details.append(f"Строка {i}, Столбец {field_index} ('{field_name}'): {', '.join(error_list)}")
-                original_row_data = [row[field_name] for field_name in header_data]
-            invalid_rows.append(original_row_data)  # Добавляем данные строки
+            original_row_data = [row[field_name] for field_name in header_data]
+            print(row)
+            # print(field_name)
+            print(header_data)
+
+
+            invalid_rows.append(original_row_data)
     return Response(invalid_rows, status=200)
