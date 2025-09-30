@@ -129,7 +129,8 @@ class RunStopApiView(APIView):
                 coordinates_list = Position.objects.filter(run_id=run_id).values_list('latitude', 'longitude')
                 distance = calculate_distance(coordinates_list)
                 run.distance = distance
-                run.save()
+                run.run_time_seconds = calculate_run_time(run_id)
+                current_run = run.save()
                 data = {"message": "Забег окончил"}
                 # Проверка и создание челленджа "Сделай 10 Забегов!"
                 athlete = Run.objects.get(id=run_id).athlete
@@ -163,6 +164,17 @@ def calculate_distance(coordinates_list):
         segment = geodesic(coordinates_list[i], coordinates_list[i+1]).km
         distance += segment
     return distance
+
+def calculate_run_time(run_id):
+    time = 0.0
+    time_coordinates = Position.objects.filter(run_id=run_id).order_by('date_time').values_list('date_time', flat=True)
+    if len(time_coordinates) < 2:
+        return time
+    start_time = time_coordinates.first()
+    end_time = time_coordinates.last()
+
+    return int((end_time - start_time).total_seconds())
+
 
 # тестовая функция для проверки расчета дистанции
 def mock_data():

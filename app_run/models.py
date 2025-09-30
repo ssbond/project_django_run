@@ -19,6 +19,8 @@ class Run(models.Model):
         default='init'
     )
     distance = models.FloatField(null=True,blank=True, default=None)
+    run_time_seconds = models.IntegerField(null=True,blank=True, default=None)
+
     class Meta:
         verbose_name = 'Забег'
         verbose_name_plural = 'Забеги'
@@ -73,6 +75,7 @@ class Position(models.Model):
     )
 
     # date = models.DateTimeField(auto_now_add=True)
+    date_time = models.DateTimeField(null=True, blank=True, default=None)
     class Meta:
         verbose_name = 'Местоположение'
         verbose_name_plural = 'Местоположения'
