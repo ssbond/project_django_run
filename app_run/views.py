@@ -215,6 +215,7 @@ class AthletsPagination(PageNumberPagination):
     max_page_size = 50  # Ограничиваем максимальное количество объектов на странице
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
+
     queryset = User.objects.filter(is_superuser=False).annotate(
         runs_finished_count=Count('runs', filter=Q(runs__status='finished'))
     )

@@ -16,6 +16,15 @@ class UserSerializer(serializers.ModelSerializer):
     type = serializers.SerializerMethodField()
     runs_finished = serializers.IntegerField(source='runs_finished_count', read_only=True)
 
+    # Если нужно посчитать в сериализаторе (плохо) и получить N+1 запросов
+    # runs_finished = serializers.SerializerMethodField()
+    # def get_runs_finished(self, obj):
+    #     ❌ ПЛОХО: отдельный запрос для каждого пользователя
+        # return obj.runs.filter(status='finished').count()
+
+    class Meta:
+        model = User
+
     class Meta:
         model = User
         fields = ['id', 'date_joined', 'username', 'last_name', 'first_name', 'type', 'runs_finished']
