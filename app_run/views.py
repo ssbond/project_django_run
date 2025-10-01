@@ -47,8 +47,8 @@ def check_collectible_item(position):
 class PositionApiViewSet(viewsets.ModelViewSet):
     queryset = Position.objects.all()
     serializer_class = PositionSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['run']
+    # filter_backends = [DjangoFilterBackend]
+    # filterset_fields = ['run']
     def create(self, request, *args, **kwargs):
         serializer = PositionSerializer(data=request.data)
         if serializer.is_valid():
@@ -64,19 +64,19 @@ class PositionApiViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    # def destroy(self, request, *args, **kwargs):
-    #     run_id = request.data.pop('id', None)
-    #     run = Run.objects.get(id=run_id)
-    #     run.delete()
-    #     return Response(status=status.HTTP_204_NO_CONTENT)
-    # def list(self, request, *args, **kwargs):
-    #     run_id = request.query_params.get('run_id', None)
-    #     if run_id is not None:
-    #         positions = Position.objects.filter(run=run_id)
-    #     else:
-    #         positions = Position.objects.all()
-    #     serializer = PositionSerializer(positions, many=True)
-    #     return Response(serializer.data, status=HTTP_200_OK)
+    def destroy(self, request, *args, **kwargs):
+        run_id = request.data.pop('id', None)
+        run = Run.objects.get(id=run_id)
+        run.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    def list(self, request, *args, **kwargs):
+        run_id = request.query_params.get('run', None)
+        if run_id is not None:
+            positions = Position.objects.filter(run=run_id)
+        else:
+            positions = Position.objects.all()
+        serializer = PositionSerializer(positions, many=True)
+        return Response(serializer.data, status=HTTP_200_OK)
 
 
 @api_view(['GET'])
