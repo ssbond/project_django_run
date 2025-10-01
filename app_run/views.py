@@ -47,6 +47,8 @@ def check_collectible_item(position):
 class PositionApiViewSet(viewsets.ModelViewSet):
     queryset = Position.objects.all()
     serializer_class = PositionSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['run']
     def create(self, request, *args, **kwargs):
         serializer = PositionSerializer(data=request.data)
         if serializer.is_valid():
