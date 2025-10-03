@@ -74,8 +74,10 @@ class Position(models.Model):
         ]
     )
 
-    # date = models.DateTimeField(auto_now_add=True)
     date_time = models.DateTimeField(null=True, blank=True, default=None)
+    speed = models.FloatField(null=True, blank=True, default=0)
+    distance = models.FloatField(null=True, blank=True, default=0)
+
     class Meta:
         verbose_name = 'Местоположение'
         verbose_name_plural = 'Местоположения'

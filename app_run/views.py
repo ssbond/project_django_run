@@ -49,18 +49,35 @@ class PositionApiViewSet(viewsets.ModelViewSet):
     serializer_class = PositionSerializer
     # filter_backends = [DjangoFilterBackend]
     # filterset_fields = ['run']
+
+    # Получаем предыдущую позицию (если есть)
+
     def create(self, request, *args, **kwargs):
         serializer = PositionSerializer(data=request.data)
         if serializer.is_valid():
             current_run = serializer.validated_data['run']
-            current_run_id = current_run.id
-            run = Run.objects.get(id=current_run_id)
-            run_status = run.status
-            if run_status != 'in_progress':
+
+            # рассчитываем данные относительно предыдущей позиции
+            previous_position = Position.objects.filter(run=current_run).order_by('-date_time').first()
+            new_latitude = serializer.validated_data['latitude']
+            new_longitude = serializer.validated_data['longitude']
+            if previous_position:
+                prev_coords = (previous_position.latitude, previous_position.longitude)
+                new_coords = (new_latitude, new_longitude)
+                distance = geodesic(prev_coords, new_coords).km
+                time_delta = (serializer.validated_data['date_time'] - previous_position.date_time).total_seconds() / 3600  # в часах
+                speed = distance / time_delta
+                serializer.validated_data['distance'] = distance
+                serializer.validated_data['speed'] = speed
+            else:
+                serializer.validated_data['distance'] = 0.0
+                serializer.validated_data['speed'] = 0.0
+
+            run = Run.objects.get(id=current_run.id)
+            if run.status != 'in_progress':
                 return Response({'detail': 'Невозможно добавить позицию в забег, который не в процессе.'}, status=status.HTTP_400_BAD_REQUEST)
             position = serializer.save()
             check_collectible_item(position)    # проверяем артефакты в радиусе 100м
-
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

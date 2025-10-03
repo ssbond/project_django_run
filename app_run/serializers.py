@@ -65,9 +65,19 @@ class ChallengeSerializer(serializers.ModelSerializer):
         model = Challenge
         fields = '__all__'
 
+
 class PositionSerializer(serializers.ModelSerializer):
     date_time = serializers.DateTimeField(format='%Y-%m-%dT%H:%M:%S.%f')
+    speed = serializers.SerializerMethodField()
+    distance = serializers.SerializerMethodField()
 
     class Meta:
         model = Position
-        fields = ['id', 'run' ,'latitude', 'longitude', 'date_time']
+        fields = ['id', 'run', 'latitude', 'longitude', 'date_time', 'speed', 'distance']
+
+    def get_speed(self, obj):
+        return round(obj.speed, 2) if obj.speed is not None else None
+
+    def get_distance(self, obj):
+        return round(obj.distance, 2) if obj.distance is not None else None
+
