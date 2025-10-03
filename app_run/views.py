@@ -148,6 +148,7 @@ class RunStopApiView(APIView):
                 coordinates_list = Position.objects.filter(run_id=run_id).values_list('latitude', 'longitude')
                 distance = calculate_distance(coordinates_list)
                 time = calculate_run_time(run_id)
+                avg_speed = 0
                 avg_speed = distance / time / 3600 if avg_speed > 0 else 0
                 run.speed = round(avg_speed, 2)
                 run.distance = distance
