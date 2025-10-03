@@ -64,8 +64,8 @@ class PositionApiViewSet(viewsets.ModelViewSet):
             if previous_position:
                 prev_coords = (previous_position.latitude, previous_position.longitude)
                 new_coords = (new_latitude, new_longitude)
-                distance = geodesic(prev_coords, new_coords).km
-                time_delta = (serializer.validated_data['date_time'] - previous_position.date_time).total_seconds() / 3600  # в часах
+                distance = geodesic(prev_coords, new_coords).meters
+                time_delta = (serializer.validated_data['date_time'] - previous_position.date_time).total_seconds()
                 speed = distance / time_delta
                 serializer.validated_data['distance'] = round(distance,2) + previous_position.distance
                 serializer.validated_data['speed'] = round(speed, 2)
