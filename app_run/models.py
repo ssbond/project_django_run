@@ -20,6 +20,7 @@ class Run(models.Model):
     )
     distance = models.FloatField(null=True,blank=True, default=None)
     run_time_seconds = models.IntegerField(null=True,blank=True, default=None)
+    speed = models.FloatField(null=True,blank=True, default=None)
 
     class Meta:
         verbose_name = 'Забег'

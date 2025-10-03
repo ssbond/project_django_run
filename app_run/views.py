@@ -67,8 +67,8 @@ class PositionApiViewSet(viewsets.ModelViewSet):
                 distance = geodesic(prev_coords, new_coords).km
                 time_delta = (serializer.validated_data['date_time'] - previous_position.date_time).total_seconds() / 3600  # в часах
                 speed = distance / time_delta
-                serializer.validated_data['distance'] = distance + previous_position.distance
-                serializer.validated_data['speed'] = speed
+                serializer.validated_data['distance'] = round(distance,2) + previous_position.distance
+                serializer.validated_data['speed'] = round(speed, 2)
             else:
                 serializer.validated_data['distance'] = 0.0
                 serializer.validated_data['speed'] = 0.0
@@ -147,8 +147,14 @@ class RunStopApiView(APIView):
                 run.status = 'finished'
                 coordinates_list = Position.objects.filter(run_id=run_id).values_list('latitude', 'longitude')
                 distance = calculate_distance(coordinates_list)
+                time = calculate_run_time(run_id)
+                avg_speed = distance / time / 3600 if avg_speed > 0 else 0
+                run.speed = round(avg_speed, 2)
                 run.distance = distance
-                run.run_time_seconds = calculate_run_time(run_id)
+                run.run_time_seconds = time
+
+
+
                 current_run = run.save()
                 data = {"message": "Забег окончил"}
                 # Проверка и создание челленджа "Сделай 10 Забегов!"
