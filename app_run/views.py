@@ -67,7 +67,7 @@ class PositionApiViewSet(viewsets.ModelViewSet):
                 distance = geodesic(prev_coords, new_coords).meters
                 time_delta = (serializer.validated_data['date_time'] - previous_position.date_time).total_seconds()
                 speed = distance / time_delta
-                serializer.validated_data['distance'] = round(distance,2) + previous_position.distance
+                serializer.validated_data['distance'] = round(distance/1000,2) + previous_position.distance
                 serializer.validated_data['speed'] = round(speed, 2)
             else:
                 serializer.validated_data['distance'] = 0.0
