@@ -149,9 +149,10 @@ class RunStopApiView(APIView):
                 distance = calculate_distance(coordinates_list) # в км
                 distance_meters = distance * 1000
                 time = calculate_run_time(run_id)   # в секундах
-                avg_speed = 0
+                avg_speed = 0.0
                 if time > 0:
-                    avg_speed = distance_meters / time
+                    # avg_speed = distance_meters / time
+                    avg_speed = calculate_run_avg_speed()
                 run.speed = round(avg_speed, 2)
                 run.distance = distance_meters
                 run.run_time_seconds = time
@@ -202,6 +203,12 @@ def calculate_run_time(run_id):
     end_time = time_coordinates.last()
 
     return int((end_time - start_time).total_seconds())
+
+def calculate_run_avg_speed(run_id):
+    avg_speed = 0.0
+    speeds = Position.objects.filter(run_id=run_id).values_list('speed', flat=True)
+    avg_speed = sum(speeds) / len(speeds)
+    return avg_speed
 
 
 # тестовая функция для проверки расчета дистанции
