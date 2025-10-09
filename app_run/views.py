@@ -152,7 +152,7 @@ class RunStopApiView(APIView):
                 avg_speed = 0.0
                 if time > 0:
                     # avg_speed = distance_meters / time
-                    avg_speed = calculate_run_avg_speed()
+                    avg_speed = calculate_run_avg_speed(run_id)
                 run.speed = round(avg_speed, 2)
                 run.distance = distance_meters
                 run.run_time_seconds = time
