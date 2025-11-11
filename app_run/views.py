@@ -161,10 +161,11 @@ class RunStopApiView(APIView):
 
                 current_run = run.save()
                 data = {"message": "Забег окончил"}
-                # Проверка и создание челленджа "Сделай 10 Забегов!"
+                # Проверка и создание челленджей
                 athlete = Run.objects.get(id=run_id).athlete
                 challenge10runs(athlete)
                 challenge50km(athlete)
+                challenge2km10m(athlete)
 
 
             # try:
@@ -241,7 +242,15 @@ def challenge50km(athlete):
         return challenge50
     return None
 
-
+def challenge2km10m(athlete):
+    run2km10m = Run.objects.filter(athlete=athlete, status='finished', distance__gte = 2000, run_time_seconds__lte = 600)
+    if  run2km10m:
+        challenge2at10, created = Challenge.objects.get_or_create(
+            athlete=athlete,
+            full_name='2 километра за 10 минут!'
+        )
+        return challenge2at10
+    return None
 
 class AthletsPagination(PageNumberPagination):
     page_size_query_param = 'size'  # Разрешаем изменять количество объектов через query параметр size в url
