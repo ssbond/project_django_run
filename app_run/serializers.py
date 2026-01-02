@@ -1,16 +1,16 @@
 from itertools import count
 
 from rest_framework import serializers
-from .models import Run, AthleteInfo, Challenge, Position, CollectibleItem
+from .models import Run, AthleteInfo, Challenge, Position, CollectibleItem, Subscribe
 
 from django.contrib.auth.models import User
-
 
 
 class CollectibleItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = CollectibleItem
-        fields = ['name','uid','longitude','latitude','value','picture']
+        fields = ['name', 'uid', 'longitude', 'latitude', 'value', 'picture']
+
 
 class UserSerializer(serializers.ModelSerializer):
     type = serializers.SerializerMethodField()
@@ -20,10 +20,7 @@ class UserSerializer(serializers.ModelSerializer):
     # runs_finished = serializers.SerializerMethodField()
     # def get_runs_finished(self, obj):
     #     ❌ ПЛОХО: отдельный запрос для каждого пользователя
-        # return obj.runs.filter(status='finished').count()
-
-    class Meta:
-        model = User
+    # return obj.runs.filter(status='finished').count()
 
     class Meta:
         model = User
@@ -35,6 +32,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserDetailSerializer(UserSerializer):
     items = serializers.SerializerMethodField()
+
     class Meta(UserSerializer.Meta):
         model = User
         fields = UserSerializer.Meta.fields + ['items']
@@ -42,8 +40,31 @@ class UserDetailSerializer(UserSerializer):
     def get_items(self, obj):
         return CollectibleItemSerializer(obj.items.all(), many=True).data
 
-class AthletRunSerializer(serializers.ModelSerializer):
 
+class AthleteDetailSerializer(UserDetailSerializer):
+    coach = serializers.SerializerMethodField()
+
+    class Meta(UserDetailSerializer.Meta):
+        model = User
+        fields = UserDetailSerializer.Meta.fields + ['coach']
+
+    def get_coach(self, obj):
+        subscription = Subscribe.objects.filter(athlete=obj).first()
+        return subscription.coach.id if subscription else None
+
+
+class CoachDetailSerializer(UserDetailSerializer):
+    athletes = serializers.SerializerMethodField()
+
+    class Meta(UserDetailSerializer.Meta):
+        model = User
+        fields = UserDetailSerializer.Meta.fields + ['athletes']
+
+    def get_athletes(self, obj):
+        return list(Subscribe.objects.filter(coach=obj).values_list('athlete_id', flat=True))
+
+
+class AthletRunSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'last_name', 'first_name']
@@ -51,14 +72,17 @@ class AthletRunSerializer(serializers.ModelSerializer):
 
 class RunSerializer(serializers.ModelSerializer):
     athlete_data = AthletRunSerializer(source="athlete", read_only=True)
+
     class Meta:
         model = Run
         fields = '__all__'
+
 
 class AthleteInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = AthleteInfo
         fields = '__all__'
+
 
 class ChallengeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -80,4 +104,3 @@ class PositionSerializer(serializers.ModelSerializer):
 
     def get_distance(self, obj):
         return round(obj.distance, 2) if obj.distance is not None else None
-

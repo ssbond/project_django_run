@@ -3,6 +3,7 @@ from django.db import models
 from django.db.models import TextField, PositiveSmallIntegerField, FloatField
 from django.contrib.auth.models import User
 
+
 # Create your models here.
 class Run(models.Model):
     STATUS_CHOICES = [
@@ -15,16 +16,17 @@ class Run(models.Model):
     comment = TextField()
     status = models.CharField(
         max_length=30,
-        choices= STATUS_CHOICES,
+        choices=STATUS_CHOICES,
         default='init'
     )
-    distance = models.FloatField(null=True,blank=True, default=None)
-    run_time_seconds = models.IntegerField(null=True,blank=True, default=None)
-    speed = models.FloatField(null=True,blank=True, default=None)
+    distance = models.FloatField(null=True, blank=True, default=None)
+    run_time_seconds = models.IntegerField(null=True, blank=True, default=None)
+    speed = models.FloatField(null=True, blank=True, default=None)
 
     class Meta:
         verbose_name = 'Забег'
         verbose_name_plural = 'Забеги'
+
 
 class AthleteInfo(models.Model):
     goals = TextField(
@@ -45,9 +47,11 @@ class AthleteInfo(models.Model):
         verbose_name = 'Информация об атлете'
         verbose_name_plural = 'Информация об атлетах'
 
+
 class Challenge(models.Model):
     full_name = models.CharField(max_length=100, verbose_name="Название челленджа")
     athlete = models.ForeignKey(User, on_delete=models.CASCADE, related_name='challenges')
+
     # date = models.DateTimeField(auto_now_add=True)
     class Meta:
         verbose_name = 'Челлендж'
@@ -55,6 +59,7 @@ class Challenge(models.Model):
 
     def __str__(self):
         return self.full_name
+
 
 class Position(models.Model):
     run = models.ForeignKey(Run, on_delete=models.CASCADE, related_name='challenges')
@@ -83,6 +88,7 @@ class Position(models.Model):
         verbose_name = 'Местоположение'
         verbose_name_plural = 'Местоположения'
 
+
 class CollectibleItem(models.Model):
     name = models.CharField(max_length=100, verbose_name="Название артефакта")
     uid = models.CharField(max_length=100, verbose_name="Уникальный идентификатор", unique=True)
@@ -107,7 +113,26 @@ class CollectibleItem(models.Model):
 
     users = models.ManyToManyField(User, related_name='items')
 
-
     class Meta:
         verbose_name = 'Коллекционный артефакт'
         verbose_name_plural = 'Коллекционные артефакты'
+
+
+class Subscribe(models.Model):
+    athlete = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='subscriptions_as_athlete',  # Атлет подписан на...
+        verbose_name="Атлет")
+    coach = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='subscribers_as_coach',  # У тренера подписчики...
+        verbose_name="Тренер"
+    )
+    subscribed_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата подписки")
+
+    class Meta:
+        verbose_name = 'Подписка на тренеров'
+        verbose_name_plural = 'Подписки на тренеров'
+        unique_together = ('athlete', 'coach')

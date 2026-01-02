@@ -8,14 +8,14 @@ from django.core.exceptions import ValidationError
 from rest_framework.filters import SearchFilter
 from rest_framework.response import Response
 from django.conf import settings
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 from rest_framework.views import APIView
 from django.db import IntegrityError
 
-from app_run.models import Run, AthleteInfo, Challenge, Position
+from app_run.models import Run, AthleteInfo, Challenge, Position, Subscribe
 from app_run.serializers import RunSerializer, UserSerializer, \
     AthleteInfoSerializer, ChallengeSerializer, PositionSerializer, \
-    UserDetailSerializer
+    UserDetailSerializer, AthleteDetailSerializer, CoachDetailSerializer
 from django.contrib.auth.models import User
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
@@ -43,10 +43,10 @@ def check_collectible_item(position):
         #     print(f"Item {item.name} is too far from the position.")
 
 
-
 class PositionApiViewSet(viewsets.ModelViewSet):
     queryset = Position.objects.all()
     serializer_class = PositionSerializer
+
     # filter_backends = [DjangoFilterBackend]
     # filterset_fields = ['run']
 
@@ -67,7 +67,7 @@ class PositionApiViewSet(viewsets.ModelViewSet):
                 distance = geodesic(prev_coords, new_coords).meters
                 time_delta = (serializer.validated_data['date_time'] - previous_position.date_time).total_seconds()
                 speed = distance / time_delta
-                serializer.validated_data['distance'] = round(distance/1000,2) + previous_position.distance
+                serializer.validated_data['distance'] = round(distance / 1000, 2) + previous_position.distance
                 serializer.validated_data['speed'] = round(speed, 2)
             else:
                 serializer.validated_data['distance'] = 0.0
@@ -75,9 +75,10 @@ class PositionApiViewSet(viewsets.ModelViewSet):
 
             run = Run.objects.get(id=current_run.id)
             if run.status != 'in_progress':
-                return Response({'detail': 'Невозможно добавить позицию в забег, который не в процессе.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'detail': 'Невозможно добавить позицию в забег, который не в процессе.'},
+                                status=status.HTTP_400_BAD_REQUEST)
             position = serializer.save()
-            check_collectible_item(position)    # проверяем артефакты в радиусе 100м
+            check_collectible_item(position)  # проверяем артефакты в радиусе 100м
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -86,6 +87,7 @@ class PositionApiViewSet(viewsets.ModelViewSet):
         run = Run.objects.get(id=run_id)
         run.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
     def list(self, request, *args, **kwargs):
         run_id = request.query_params.get('run', None)
         if run_id is not None:
@@ -104,9 +106,12 @@ def company_details(request):
         'contacts': settings.CONTACTS,
     }
     return Response(details)
+
+
 class RunsPagination(PageNumberPagination):
     page_size_query_param = 'size'  # Разрешаем изменять количество объектов через query параметр size в url
     max_page_size = 50  # Ограничиваем максимальное количество объектов на странице
+
 
 class RunViewSet(viewsets.ModelViewSet):
     queryset = Run.objects.all().select_related('athlete')
@@ -116,7 +121,6 @@ class RunViewSet(viewsets.ModelViewSet):
     ordering_fields = ['created_at']
     ordering = ('-created_at',)
     pagination_class = RunsPagination
-
 
 
 class RunStartApiView(APIView):
@@ -131,10 +135,11 @@ class RunStartApiView(APIView):
                 return Response(data, status=status.HTTP_200_OK)
             else:
                 data = {"message": "Невозможно запустить запущенный или законченный забег"}
-                return Response(data,status=status.HTTP_400_BAD_REQUEST)
+                return Response(data, status=status.HTTP_400_BAD_REQUEST)
         except Run.DoesNotExist:
             data = {"message": "Забег не найден"}
             return Response(data, status=status.HTTP_404_NOT_FOUND)
+
 
 class RunStopApiView(APIView):
     def post(self, request, *args, **kwargs):
@@ -143,12 +148,12 @@ class RunStopApiView(APIView):
         try:
             run = Run.objects.get(id=run_id)
             if run.status == 'in_progress':
-            # if run.status == 'finished':
+                # if run.status == 'finished':
                 run.status = 'finished'
                 coordinates_list = Position.objects.filter(run_id=run_id).values_list('latitude', 'longitude')
-                distance = calculate_distance(coordinates_list) # в км
+                distance = calculate_distance(coordinates_list)  # в км
                 distance_meters = distance * 1000
-                time = calculate_run_time(run_id)   # в секундах
+                time = calculate_run_time(run_id)  # в секундах
                 avg_speed = 0.0
                 if time > 0:
                     # avg_speed = distance_meters / time
@@ -156,8 +161,6 @@ class RunStopApiView(APIView):
                 run.speed = round(avg_speed, 2)
                 run.distance = distance
                 run.run_time_seconds = time
-
-
 
                 current_run = run.save()
                 data = {"message": "Забег окончил"}
@@ -167,17 +170,16 @@ class RunStopApiView(APIView):
                 challenge50km(athlete)
                 challenge2km10m(athlete)
 
-
-            # try:
-            #         athlete = Run.objects.get(id=run_id).athlete
-            #         total_runs = Run.objects.filter(athlete=athlete, status='finished').count()
-            #     except Run.DoesNotExist:
-            #         total_runs = 0
-            #     if total_runs >= 10:
-            #         challenge10, created = Challenge.objects.get_or_create(
-            #             athlete=athlete,
-            #             full_name='Сделай 10 Забегов!'
-            #         )
+                # try:
+                #         athlete = Run.objects.get(id=run_id).athlete
+                #         total_runs = Run.objects.filter(athlete=athlete, status='finished').count()
+                #     except Run.DoesNotExist:
+                #         total_runs = 0
+                #     if total_runs >= 10:
+                #         challenge10, created = Challenge.objects.get_or_create(
+                #             athlete=athlete,
+                #             full_name='Сделай 10 Забегов!'
+                #         )
                 return Response(data, status=status.HTTP_200_OK)
             else:
                 data = {"message": "Невозможно закончить не начатый забег"}
@@ -187,13 +189,13 @@ class RunStopApiView(APIView):
             return Response(data, status=status.HTTP_404_NOT_FOUND)
 
 
-
 def calculate_distance(coordinates_list):
     distance = 0.0
-    for i in range(len(coordinates_list)-1):
-        segment = geodesic(coordinates_list[i], coordinates_list[i+1]).km
+    for i in range(len(coordinates_list) - 1):
+        segment = geodesic(coordinates_list[i], coordinates_list[i + 1]).km
         distance += segment
     return distance
+
 
 def calculate_run_time(run_id):
     time = 0.0
@@ -204,6 +206,7 @@ def calculate_run_time(run_id):
     end_time = time_coordinates.last()
 
     return int((end_time - start_time).total_seconds())
+
 
 def calculate_run_avg_speed(run_id):
     avg_speed = 0.0
@@ -221,6 +224,7 @@ def mock_data():
     distance = calculate_distance(coordinates_list)
     print(distance)
 
+
 def challenge10runs(athlete):
     total_runs = Run.objects.filter(athlete=athlete, status='finished').count()
     if total_runs >= 10:
@@ -233,7 +237,8 @@ def challenge10runs(athlete):
 
 
 def challenge50km(athlete):
-    total_distance = Run.objects.filter(athlete=athlete, status='finished').aggregate(total_distance=Sum('distance'))['total_distance'] or 0
+    total_distance = Run.objects.filter(athlete=athlete, status='finished').aggregate(total_distance=Sum('distance'))[
+                         'total_distance'] or 0
     if total_distance >= 50:
         challenge50, created = Challenge.objects.get_or_create(
             athlete=athlete,
@@ -242,9 +247,10 @@ def challenge50km(athlete):
         return challenge50
     return None
 
+
 def challenge2km10m(athlete):
-    run2km10m = Run.objects.filter(athlete=athlete, status='finished', distance__gte = 2, run_time_seconds__lte = 600)
-    if  run2km10m:
+    run2km10m = Run.objects.filter(athlete=athlete, status='finished', distance__gte=2, run_time_seconds__lte=600)
+    if run2km10m:
         challenge2at10, created = Challenge.objects.get_or_create(
             athlete=athlete,
             full_name='2 километра за 10 минут!'
@@ -252,12 +258,13 @@ def challenge2km10m(athlete):
         return challenge2at10
     return None
 
+
 class AthletsPagination(PageNumberPagination):
     page_size_query_param = 'size'  # Разрешаем изменять количество объектов через query параметр size в url
     max_page_size = 50  # Ограничиваем максимальное количество объектов на странице
 
-class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.filter(is_superuser=False).annotate(
         runs_finished_count=Count('runs', filter=Q(runs__status='finished'))
     )
@@ -266,9 +273,10 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['first_name', 'last_name']  # Указываем поля по которым будет вестись поиск
     search_fields = ['first_name', 'last_name']  # Для поиска по части строки
-    ordering_fields = ['date_joined'] # Поля по которым будет возможна сортировка
+    ordering_fields = ['date_joined']  # Поля по которым будет возможна сортировка
     ordering = ['-date_joined']  # Сортировка по умолчанию (новые first)
     pagination_class = AthletsPagination
+
     def get_queryset(self):
         qs = super().get_queryset()
         user_role = self.request.query_params.get('type')
@@ -278,20 +286,34 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
             qs = qs.filter(is_staff=True)
         return qs
 
-class UserDetailApiView(APIView):
-    def get(self,request, user_id):
-        try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            return Response('User not found', status=status.HTTP_404_NOT_FOUND)
-        user_serializer = UserDetailSerializer(user)
-        return Response(user_serializer.data)
+    def get_serializer_class(self):
+        # Если это запрос одного пользователя (детальный)
+        if self.action == 'retrieve':
+            # Получаем пользователя
+            user = self.get_object()
 
+            # Определяем тип
+            if user.is_staff and not user.is_superuser:  # Тренер
+                return CoachDetailSerializer
+            else:  # Атлет (или админ — админу не показываем coach/athletes)
+                return AthleteDetailSerializer
+
+        # Для списка (list) и всех остальных случаев
+        return self.serializer_class  # Или super().get_serializer_class()
+#
+# class UserDetailApiView(APIView):
+#     def get(self, request, user_id):
+#         try:
+#             user = User.objects.get(id=user_id)
+#         except User.DoesNotExist:
+#             return Response('User not found', status=status.HTTP_404_NOT_FOUND)
+#         user_serializer = UserDetailSerializer(user)
+#         return Response(user_serializer.data)
 
 class AthleteInfoApiView(APIView):
     def get(self, request, *args, **kwargs):
 
-        mock_data() #тестовый вызов
+        mock_data()  # тестовый вызов
 
         athlete_id = self.kwargs.get('athlete_id')
         try:
@@ -335,7 +357,30 @@ class ChallengeInfoApiViewSet(viewsets.ReadOnlyModelViewSet):
     # pagination_class = RunsPagination
     # def list(self, request, *args, **kwargs):
     #     user = self.request.user  # текущий пользователь
-        # ... ваш код ...
-        # print(user)
-        # return super().list(request, *args, **kwargs)
+    # ... ваш код ...
+    # print(user)
+    # return super().list(request, *args, **kwargs)
 
+
+class SubscribeToCoachApiView(APIView):
+    def post(self, request, *args, **kwargs):
+        coach_id = self.kwargs.get('id')
+        coach = User.objects.filter(id=coach_id).first()
+        if coach and coach.is_staff == True and coach.is_superuser == False:
+            athlete_id = request.data.get('athlete')
+            if athlete_id:
+                athlete = User.objects.filter(id=athlete_id).first()
+                if athlete and athlete.is_staff == False and athlete.is_superuser == False:
+                    if Subscribe.objects.filter(athlete=athlete, coach=coach).exists():
+                        return Response({"detail": "Подписка уже оформлена"}, status=HTTP_400_BAD_REQUEST)
+                    new_subscribe = Subscribe(athlete=athlete, coach=coach)
+                    try:
+                        new_subscribe.save()
+                    except IntegrityError as e:
+                        if 'unique' in str(e).lower():
+                            return Response({"detail": "Подписка уже существует"}, status=400)
+                        return Response({"detail": "Ошибка базы данных"}, status=500)
+                    return Response({"detail": "Подписка успешно оформлена"}, status=HTTP_200_OK)
+            return Response({"detail": 'Athlete not found'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({"detail": 'Coach not found'}, status=status.HTTP_404_NOT_FOUND)
