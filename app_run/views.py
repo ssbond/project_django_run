@@ -383,4 +383,4 @@ class SubscribeToCoachApiView(APIView):
                     return Response({"detail": "Подписка успешно оформлена"}, status=HTTP_200_OK)
             return Response({"detail": 'Athlete not found'}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            return Response({"detail": 'Coach not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": 'Coach not found'}, status=status.HTTP_400_BAD_REQUEST)
