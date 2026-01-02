@@ -366,21 +366,22 @@ class SubscribeToCoachApiView(APIView):
     def post(self, request, *args, **kwargs):
         coach_id = self.kwargs.get('id')
         coach = User.objects.filter(id=coach_id).first()
-        if coach and coach.is_staff == True and coach.is_superuser == False:
-            athlete_id = request.data.get('athlete')
-            if athlete_id:
-                athlete = User.objects.filter(id=athlete_id).first()
-                if athlete and athlete.is_staff == False and athlete.is_superuser == False:
-                    if Subscribe.objects.filter(athlete=athlete, coach=coach).exists():
-                        return Response({"detail": "Подписка уже оформлена"}, status=HTTP_400_BAD_REQUEST)
-                    new_subscribe = Subscribe(athlete=athlete, coach=coach)
-                    try:
-                        new_subscribe.save()
-                    except IntegrityError as e:
-                        if 'unique' in str(e).lower():
-                            return Response({"detail": "Подписка уже существует"}, status=400)
-                        return Response({"detail": "Ошибка базы данных"}, status=500)
-                    return Response({"detail": "Подписка успешно оформлена"}, status=HTTP_200_OK)
-            return Response({"detail": 'Athlete not found'}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            return Response({"detail": 'Coach not found'}, status=status.HTTP_400_BAD_REQUEST)
+        if coach:
+            if coach.is_staff == True and coach.is_superuser == False:
+                athlete_id = request.data.get('athlete')
+                if athlete_id:
+                    athlete = User.objects.filter(id=athlete_id).first()
+                    if athlete and athlete.is_staff == False and athlete.is_superuser == False:
+                        if Subscribe.objects.filter(athlete=athlete, coach=coach).exists():
+                            return Response({"detail": "Подписка уже оформлена"}, status=HTTP_400_BAD_REQUEST)
+                        new_subscribe = Subscribe(athlete=athlete, coach=coach)
+                        try:
+                            new_subscribe.save()
+                        except IntegrityError as e:
+                            if 'unique' in str(e).lower():
+                                return Response({"detail": "Подписка уже существует"}, status=400)
+                            return Response({"detail": "Ошибка базы данных"}, status=500)
+                        return Response({"detail": "Подписка успешно оформлена"}, status=HTTP_200_OK)
+                return Response({"detail": 'Athlete not found'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "It's not a coach" }, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"detail": 'Coach not found'}, status=status.HTTP_404_NOT_FOUND)
