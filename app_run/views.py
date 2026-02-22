@@ -382,7 +382,6 @@ class AnalyticsForCoachApiView(APIView):
                 speed_avg = Run.objects.filter(
                     athlete__subscriptions_as_athlete__coach=coach, status='finished'
                 ).values('athlete').annotate(avg_speed=Avg('speed')).order_by('-avg_speed').first()
-                print(speed_avg)
                 return Response({
                     'longest_run_user': longest_run_user if longest_run else None,
                     'longest_run_value': longest_run_value if longest_run else None,
