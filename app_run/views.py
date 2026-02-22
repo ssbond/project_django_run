@@ -369,8 +369,9 @@ class ChallengeInfoApiViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RateCoachApiView(APIView):
     def post(self, request, *args, **kwargs):
-        coach_id = self.kwargs.get('id')
+        coach_id = self.kwargs.get('coach_id')
         coach = User.objects.filter(id=coach_id).first()
+        print(coach_id)
         if coach:
             if coach.is_staff == True and coach.is_superuser == False:
                 athlete_id = request.data.get('athlete')
