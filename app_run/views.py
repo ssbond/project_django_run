@@ -367,6 +367,33 @@ class ChallengeInfoApiViewSet(viewsets.ReadOnlyModelViewSet):
     # return super().list(request, *args, **kwargs)
 
 
+class AnalyticsForCoachApiView(APIView):
+    def get(self, request, *args, **kwargs):
+        coach_id = self.kwargs.get('coach_id')
+        coach = User.objects.filter(id=coach_id).first()
+        if coach:
+            if coach.is_staff == True and coach.is_superuser == False:
+                longest_run = Run.objects.filter(athlete__subscriptions_as_athlete__coach=coach, status='finished').order_by('-distance').first()
+                longest_run_user = longest_run.athlete.id if longest_run is not None else None
+                longest_run_value = longest_run.distance if longest_run else 0
+                total_run = Run.objects.filter(
+                    athlete__subscriptions_as_athlete__coach=coach, status='finished'
+                ).values('athlete').annotate(total_distance=Sum('distance')).order_by('-total_distance').first()
+                speed_avg = Run.objects.filter(
+                    athlete__subscriptions_as_athlete__coach=coach, status='finished'
+                ).values('athlete').annotate(avg_speed=Avg('speed')).order_by('-avg_speed').first()
+                print(speed_avg)
+                return Response({
+                    'longest_run_user': longest_run_user if longest_run else None,
+                    'longest_run_value': longest_run_value if longest_run else None,
+                    'total_run_user':  total_run['athlete'] if total_run else None, # Id Бегуна который пробежал в сумме больше всех у этого Тренера
+                    'total_run_value':  total_run['total_distance'] if total_run else None,  # Дистанция которую в сумме пробежал этот Бегун
+                    'speed_avg_user':  speed_avg['athlete'] if speed_avg else None,  #  Id Бегуна который всреднем бежал быстрее всех
+                    'speed_avg_value': speed_avg['avg_speed'] if speed_avg else None  , # Средняя скорость этого Бегуна
+                }, status=status.HTTP_200_OK)
+            return Response({"detail": "It's not a coach" }, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"detail": 'Coach not found'}, status=status.HTTP_404_NOT_FOUND)
+
 class RateCoachApiView(APIView):
     def post(self, request, *args, **kwargs):
         coach_id = self.kwargs.get('coach_id')
