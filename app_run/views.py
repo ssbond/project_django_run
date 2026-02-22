@@ -378,7 +378,10 @@ class RateCoachApiView(APIView):
                 if athlete_id:
                     athlete = User.objects.filter(id=athlete_id).first()
                     if athlete and athlete.is_staff == False and athlete.is_superuser == False:
-                        rating = request.data.get('rating')
+                        try:
+                            rating = int(request.data.get('rating'))
+                        except(TypeError, ValueError):
+                            return Response({"detail": "Рейтинг должен быть числом"}, status=400)
                         if rating is not None and 1 <= rating <= 5:
                             subscribe = Subscribe.objects.filter(athlete=athlete, coach=coach).first()
                             if subscribe:
