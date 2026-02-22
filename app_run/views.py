@@ -390,12 +390,21 @@ class ChallengesSummaryApiViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ChallengesSummarySerializer
 
     def get_queryset(self):
-        # Убираем дубликаты
-        queryset = Challenge.objects.prefetch_related(
-            Prefetch(
-                'athlete',
-                queryset=User.objects.all(),
-                to_attr='completed_athletes'
-            )
-        ).distinct()
-        return queryset
+        # Получаем все уникальные челленджи
+        challenges = Challenge.objects.all().values('full_name').distinct()
+
+        # Преобразуем в список объектов Challenge с добавлением атлетов
+        result = []
+        for challenge_data in challenges:
+            full_name = challenge_data['full_name']
+            # Получаем первый объект Challenge с этим названием
+            challenge_obj = Challenge.objects.filter(full_name=full_name).first()
+
+            # Получаем всех атлетов, которые выполнили этот челлендж
+            athletes = User.objects.filter(challenges__full_name=full_name)
+
+            # Добавляем атлетов в объект challenge как атрибут
+            challenge_obj.completed_athletes = list(athletes)
+            result.append(challenge_obj)
+
+        return result
