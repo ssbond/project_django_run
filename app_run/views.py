@@ -1,6 +1,6 @@
 from pyexpat.errors import messages
 
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Q, Sum, Prefetch
 
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view
@@ -15,7 +15,7 @@ from django.db import IntegrityError
 from app_run.models import Run, AthleteInfo, Challenge, Position, Subscribe
 from app_run.serializers import RunSerializer, UserSerializer, \
     AthleteInfoSerializer, ChallengeSerializer, PositionSerializer, \
-    UserDetailSerializer, AthleteDetailSerializer, CoachDetailSerializer
+    UserDetailSerializer, AthleteDetailSerializer, CoachDetailSerializer, ChallengesSummarySerializer
 from django.contrib.auth.models import User
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
@@ -385,3 +385,18 @@ class SubscribeToCoachApiView(APIView):
                 return Response({"detail": 'Athlete not found'}, status=status.HTTP_400_BAD_REQUEST)
             return Response({"detail": "It's not a coach" }, status=status.HTTP_400_BAD_REQUEST)
         return Response({"detail": 'Coach not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class ChallengesSummaryApiViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = ChallengesSummarySerializer
+
+    def get_queryset(self):
+        # Оптимизация запросов
+        queryset = Challenge.objects.prefetch_related(
+            Prefetch(
+                'athlete',
+                queryset=User.objects.select_related('athleteinfo'),
+                to_attr='completed_athletes'
+            )
+        )
+
+        return queryset

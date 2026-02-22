@@ -1,5 +1,6 @@
 from itertools import count
 
+from openpyxl.pivot.fields import Number
 from rest_framework import serializers
 from .models import Run, AthleteInfo, Challenge, Position, CollectibleItem, Subscribe
 
@@ -88,6 +89,26 @@ class ChallengeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Challenge
         fields = '__all__'
+
+
+class ChallengesSummarySerializer(serializers.ModelSerializer):
+    athletes = serializers.SerializerMethodField()
+    name_to_display = serializers.CharField(source='full_name')
+
+    class Meta:
+        model = Challenge
+        fields = ['name_to_display'] + ['athletes']
+
+    def get_athletes(self, obj):
+        athletes = User.objects.filter(challenges=obj)
+        return [
+            {
+                'id': athlete.id,
+                'full_name': f"{athlete.first_name} {athlete.last_name}",
+                'username': athlete.username
+            }
+            for athlete in athletes
+        ]
 
 
 class PositionSerializer(serializers.ModelSerializer):
