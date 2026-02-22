@@ -131,6 +131,12 @@ class Subscribe(models.Model):
         verbose_name="Тренер"
     )
     subscribed_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата подписки")
+    rating = models.PositiveSmallIntegerField(
+        verbose_name='Рейтинг тренера',
+        validators=[MaxValueValidator(5), MinValueValidator(1)],
+        blank=True,
+        null=True,
+    )
 
     class Meta:
         verbose_name = 'Подписка на тренеров'

@@ -16,6 +16,7 @@ class CollectibleItemSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     type = serializers.SerializerMethodField()
     runs_finished = serializers.IntegerField(source='runs_finished_count', read_only=True)
+    rating = serializers.FloatField(source='avg_rating', read_only=True)
 
     # Если нужно посчитать в сериализаторе (плохо) и получить N+1 запросов
     # runs_finished = serializers.SerializerMethodField()
@@ -25,7 +26,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'date_joined', 'username', 'last_name', 'first_name', 'type', 'runs_finished']
+        fields = ['id', 'date_joined', 'username', 'last_name', 'first_name', 'type', 'runs_finished', 'rating']
 
     def get_type(self, obj):
         return 'coach' if obj.is_staff else 'athlete'

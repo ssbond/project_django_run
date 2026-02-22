@@ -1,6 +1,8 @@
+from idlelib.rpc import response_queue
 from pyexpat.errors import messages
 
-from django.db.models import Count, Q, Sum, Prefetch
+from django.db.models import Count, Q, Sum, Avg
+from psycopg2.errorcodes import NULL_VALUE_NOT_ALLOWED
 
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view
@@ -266,9 +268,11 @@ class AthletsPagination(PageNumberPagination):
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.filter(is_superuser=False).annotate(
-        runs_finished_count=Count('runs', filter=Q(runs__status='finished'))
+        runs_finished_count=Count('runs', filter=Q(runs__status='finished')),
+        avg_rating=Avg('subscribers_as_coach__rating',
+                       filter=Q(subscribers_as_coach__rating__isnull=False)
+                       )
     )
-
     serializer_class = UserSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['first_name', 'last_name']  # Указываем поля по которым будет вестись поиск
@@ -276,6 +280,7 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     ordering_fields = ['date_joined']  # Поля по которым будет возможна сортировка
     ordering = ['-date_joined']  # Сортировка по умолчанию (новые first)
     pagination_class = AthletsPagination
+
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -360,6 +365,30 @@ class ChallengeInfoApiViewSet(viewsets.ReadOnlyModelViewSet):
     # ... ваш код ...
     # print(user)
     # return super().list(request, *args, **kwargs)
+
+
+class RateCoachApiView(APIView):
+    def post(self, request, *args, **kwargs):
+        coach_id = self.kwargs.get('id')
+        coach = User.objects.filter(id=coach_id).first()
+        if coach:
+            if coach.is_staff == True and coach.is_superuser == False:
+                athlete_id = request.data.get('athlete')
+                if athlete_id:
+                    athlete = User.objects.filter(id=athlete_id).first()
+                    if athlete and athlete.is_staff == False and athlete.is_superuser == False:
+                        rating = request.data.get('rating')
+                        if rating is not None and 1 <= rating <= 5:
+                            subscribe = Subscribe.objects.filter(athlete=athlete, coach=coach).first()
+                            if subscribe:
+                                subscribe.rating = rating
+                                subscribe.save()
+                                return Response({"detail": "Рейтинг успешно сохранен"}, status=HTTP_200_OK)
+                            return Response({"detail": "Подписка не найдена"}, status=HTTP_400_BAD_REQUEST)
+                        return Response({"detail": "Рейтинг должен быть от 1 до 5"}, status=HTTP_400_BAD_REQUEST)
+                return Response({"detail": 'Athlete not found'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "It's not a coach" }, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"detail": 'Coach not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
 class SubscribeToCoachApiView(APIView):
