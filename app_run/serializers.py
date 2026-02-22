@@ -100,7 +100,9 @@ class ChallengesSummarySerializer(serializers.ModelSerializer):
         fields = ['name_to_display'] + ['athletes']
 
     def get_athletes(self, obj):
-        athletes = User.objects.filter(challenges=obj)
+        athletes = getattr(obj, 'completed_athletes', [])
+        if isinstance(athletes, User):
+            athletes = [athletes]
         return [
             {
                 'id': athlete.id,

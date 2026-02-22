@@ -390,13 +390,12 @@ class ChallengesSummaryApiViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ChallengesSummarySerializer
 
     def get_queryset(self):
-        # Оптимизация запросов
+        # Убираем дубликаты
         queryset = Challenge.objects.prefetch_related(
             Prefetch(
                 'athlete',
-                queryset=User.objects.select_related('athleteinfo'),
+                queryset=User.objects.all(),
                 to_attr='completed_athletes'
             )
-        )
-
+        ).distinct()
         return queryset
